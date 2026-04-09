@@ -1,4 +1,5 @@
 # Pi Zero 2 W Dashboard — Setup Guide
+    #Created by Claude Code.
 
 ## Files
 ```
