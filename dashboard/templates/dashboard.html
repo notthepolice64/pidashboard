@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Josefin+Sans:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d1a0f; --bg2:#111e13; --bg3:#162019; --border:#1e3022;
+    --c1:#f5c842; --c2:#3dd6a8; --c3:#e87040;
+    --text:#ffffff; --muted:rgba(255,255,255,0.5);
+    --top1:#f5c842; --top2:#3dd6a8; --top3:#e87040; --top4:#7a9eff;
+    --b1:#2d6638; --b2:#4a9e5c; --ri:#4a9e5c;
+    --ov1:rgba(74,158,92,0.025); --ov2:rgba(74,158,92,0.02);
+  }
+  body.beach {
+    --bg:#0a1a2e; --bg2:#0d2240; --bg3:#0f2a50; --border:#1a3a6a;
+    --c1:#ffd060; --c2:#60d4ff; --c3:#ff8c42;
+    --text:#ffffff; --muted:rgba(255,255,255,0.5);
+    --top1:#ffd060; --top2:#60d4ff; --top3:#ff8c42; --top4:#80ffcc;
+    --b1:#1a4a7a; --b2:#2a6aaa; --ri:#2a8acc;
+    --ov1:rgba(96,212,255,0.02); --ov2:rgba(255,208,96,0.015);
+  }
+  body.desert {
+    --bg:#100a04; --bg2:#180e06; --bg3:#201208; --border:#2e1a08;
+    --c1:#ffb830; --c2:#ff7a30; --c3:#c860ff;
+    --text:#ffffff; --muted:rgba(255,255,255,0.5);
+    --top1:#ffb830; --top2:#c860ff; --top3:#ff7a30; --top4:#60c8ff;
+    --b1:#2a1a08; --b2:#4a3018; --ri:#8a6030;
+    --ov1:rgba(255,184,48,0.02); --ov2:rgba(200,96,255,0.015);
+  }
+
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  html, body { width:100vw; height:100vh; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Josefin Sans',sans-serif; transition:background 1.5s,color 1.5s; }
+  body::before { content:''; position:fixed; inset:0; background-image:repeating-linear-gradient(118deg,transparent 0,transparent 60px,var(--ov1) 60px,var(--ov1) 61px),repeating-linear-gradient(62deg,transparent 0,transparent 80px,var(--ov2) 80px,var(--ov2) 81px); pointer-events:none; z-index:0; }
+
+  /* ── GRID: 3 cols, 3 rows
+     Col 1 (wider): clock top, photo bottom×2
+     Col 2 (widest): weather current top, 7-day middle, stocks+status bottom
+     Col 3: reminders full height
+  */
+  .grid {
+    position:relative; z-index:1;
+    display:grid;
+    grid-template-columns: 1.1fr 1.6fr 0.9fr;
+    grid-template-rows: 1fr 1fr 1fr auto;
+    gap:1px; width:100vw; height:100vh;
+    background:var(--border); transition:background 1.5s;
+  }
+
+  .cell { background:var(--bg2); padding:1.4rem 1.8rem; display:flex; flex-direction:column; justify-content:center; position:relative; overflow:hidden; transition:background 1.5s; }
+  .cell::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:repeating-linear-gradient(90deg,var(--b1) 0,var(--b1) 38px,var(--b2) 38px,var(--b2) 40px,var(--b1) 40px,var(--b1) 78px); opacity:.4; transition:background 1.5s; }
+  .cell.t1::before { background:var(--top1); opacity:.7; }
+  .cell.t2::before { background:var(--top2); opacity:.7; }
+  .cell.t3::before { background:var(--top3); opacity:.7; }
+  .cell.t4::before { background:var(--top4); opacity:.7; }
+
+  .label { font-size:.65rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); margin-bottom:.5rem; transition:color 1.5s; }
+
+  /* ── CLOCK ── */
+  #clock-cell { grid-column:1; grid-row:1; background:var(--bg3); padding:1.4rem 1.8rem; justify-content:center; overflow:hidden; }
+  #time {
+    font-family:'Playfair Display',serif;
+    font-size:clamp(4.8rem,8.5vw,9rem);
+    font-weight:700; line-height:1;
+    color:var(--c1); letter-spacing:-.02em; font-variant-numeric:tabular-nums;
+    transition:color 1.5s; flex-shrink:0;
+    align-self:flex-end; margin-left:auto; margin-bottom:.1rem;
+  }
+  #utc-row { display:flex; align-items:baseline; gap:.5rem; margin-top:.35rem; flex-shrink:0; justify-content:flex-end; }
+  .utc-lbl { font-size:.85rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); opacity:.7; }
+  #utc-time { font-family:'Share Tech Mono',monospace; font-size:1.25rem; color:var(--c1); opacity:.5; font-variant-numeric:tabular-nums; }
+  #date-day-row { display:flex; align-items:baseline; gap:.7rem; margin-top:.5rem; flex-shrink:0; flex-wrap:wrap; }
+  #date { font-size:1.6rem; font-weight:300; color:var(--c1); opacity:.75; letter-spacing:.07em; }
+  #day  { font-family:'Playfair Display',serif; font-size:clamp(2rem,3.5vw,2.8rem); font-weight:400; font-style:italic; color:var(--muted); }
+  .deco { position:absolute; bottom:-14px; right:-14px; width:130px; height:130px; opacity:.06; pointer-events:none; }
+
+  /* ── PHOTO ── */
+  #photo-cell { grid-column:1; grid-row:2/5; padding:0; background:#000; overflow:hidden; }
+  #photo-cell::before { display:none; }
+  .photo-frame { width:100%; height:100%; position:relative; }
+  .photo-frame img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 1.2s ease; }
+  .photo-frame img.active { opacity:1; }
+  .photo-bar { position:absolute; bottom:0; left:0; right:0; z-index:2; padding:.4rem .7rem; background:linear-gradient(transparent,rgba(0,0,0,.65)); display:flex; justify-content:space-between; align-items:flex-end; }
+  .photo-name { font-size:.55rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.32); }
+  .photo-dots { display:flex; gap:4px; }
+  .photo-dot  { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.18); transition:background .3s; }
+  .photo-dot.active { background:var(--c1); }
+  .photo-empty { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.6rem; color:var(--muted); }
+  .photo-empty span { font-size:.7rem; font-weight:600; letter-spacing:.15em; text-transform:uppercase; }
+
+  /* ── WEATHER CURRENT ── */
+  #weather-cell { grid-column:2; grid-row:1; padding:1.4rem 2rem; justify-content:space-evenly; }
+  .weather-main { display:flex; align-items:center; gap:2.4rem; }
+  #temp { font-family:'Playfair Display',serif; font-size:clamp(5rem,9vw,9.5rem); font-weight:700; line-height:1; color:var(--c2); flex-shrink:0; transition:color 1.5s; }
+  .weather-detail { display:flex; flex-direction:column; gap:.5rem; }
+  #condition { font-size:1.7rem; font-weight:300; color:var(--muted); letter-spacing:.07em; }
+  .weather-stats { display:flex; gap:2.2rem; margin-top:.2rem; }
+  .stat-val { font-size:1.7rem; font-weight:600; color:var(--text); }
+  .stat-lbl { font-size:.75rem; font-weight:600; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-top:.1rem; }
+  .weather-extra { display:flex; gap:2rem; flex-wrap:wrap; padding-top:.8rem; border-top:1px solid var(--border); margin-top:.2rem; }
+  .extra-stat { display:flex; flex-direction:column; }
+  .extra-val { font-size:1.2rem; font-weight:600; color:var(--text); }
+  .extra-lbl { font-size:.65rem; font-weight:600; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-top:.15rem; }
+
+  /* ── HOURLY FORECAST ── */
+  .hourly-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; width:100%; }
+  .h-slot { background:var(--bg); border:1px solid var(--border); border-radius:5px; padding:.4rem .3rem; display:flex; flex-direction:column; align-items:center; justify-content:space-evenly; transition:background 1.5s,border-color 1.5s; }
+  .h-slot.now { border-color:var(--c2); }
+  .h-time { font-family:'Share Tech Mono',monospace; font-size:.65rem; color:var(--muted); letter-spacing:.04em; }
+  .h-icon { width:26px; height:26px; display:flex; align-items:center; justify-content:center; }
+  .h-temp { font-size:.95rem; font-weight:600; color:var(--text); }
+  .h-rain { font-size:.55rem; font-weight:600; color:#60a8d8; }
+
+  /* ── 7-DAY FORECAST (compact) ── */
+  #forecast-cell { grid-column:2; grid-row:2; padding:.7rem 1.2rem; display:flex; flex-direction:column; gap:.5rem; }
+  .forecast-section-label { font-size:.52rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); }
+  .forecast-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; width:100%; flex:1; min-height:0; }
+  .fc-day { background:var(--bg); border:1px solid var(--border); border-radius:5px; padding:.4rem .3rem; display:flex; flex-direction:column; align-items:center; justify-content:space-evenly; gap:0; transition:background 1.5s,border-color 1.5s; min-height:0; }
+  .fc-name { font-size:.72rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .fc-icon { width:24px; height:24px; display:flex; align-items:center; justify-content:center; }
+  .fc-cond { font-size:.58rem; font-weight:400; color:var(--muted); text-align:center; line-height:1.2; }
+  .fc-hi   { font-size:.88rem; font-weight:600; color:var(--text); }
+  .fc-lo   { font-size:.72rem; font-weight:300; color:var(--muted); }
+  .fc-temps { display:flex; align-items:baseline; gap:.28rem; }
+
+  /* ── STOCKS ── */
+  #stocks-cell { grid-column:2; grid-row:3; padding:.8rem 1.2rem; display:flex; flex-direction:column; justify-content:stretch; }
+  .ticker-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:.4rem; width:100%; flex:1; min-height:0; }
+  .ticker { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:.5rem .7rem; display:flex; flex-direction:column; justify-content:space-evenly; gap:0; transition:border-color .4s,background 1.5s; min-height:0; }
+  .ticker.up   { border-color:#2d5a38; }
+  .ticker.down { border-color:#5a2010; }
+  body.beach .ticker.up   { border-color:#1a6a3a; }
+  body.beach .ticker.down { border-color:#7a2010; }
+  body.desert .ticker.up  { border-color:#6a4a10; }
+  body.desert .ticker.down{ border-color:#6a1a08; }
+  .t-sym   { font-family:'Share Tech Mono',monospace; font-size:1rem; color:var(--muted); letter-spacing:.03em; }
+  .t-price { font-family:'Share Tech Mono',monospace; font-size:1.15rem; font-weight:600; color:var(--text); }
+  .t-chg   { font-family:'Share Tech Mono',monospace; font-size:.85rem; }
+  .t-chg.up   { color:var(--c2); }
+  .t-chg.down { color:var(--c3); }
+  .t-chg.flat { color:var(--muted); }
+
+  /* ── STATUS ── */
+  #bottom-cell { grid-column:2; grid-row:4; padding:.5rem 1.2rem; background:var(--bg); display:flex; align-items:center; }
+  #bottom-cell::before { display:none; }
+  #status-bar { font-size:.52rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; gap:.8rem; flex-wrap:wrap; }
+  #status-bar em { color:var(--ri); font-style:normal; transition:color 1.5s; }
+  #theme-badge { color:var(--c1); font-style:normal; transition:color 1.5s; }
+
+  /* ── REMINDERS ── */
+  #reminders-cell { grid-column:3; grid-row:1/3; justify-content:flex-start; padding-top:1.6rem; background:var(--bg3); }
+  #reminders-list { list-style:none; margin-top:.7rem; display:flex; flex-direction:column; gap:.6rem; overflow:hidden; }
+  .reminder-item { padding:.9rem 1.1rem; background:rgba(0,0,0,.25); border-left:4px solid var(--ri); border-radius:0 4px 4px 0; animation:slideIn .35s ease both; transition:border-color 1.5s; }
+  .reminder-item.overdue { border-left-color:var(--c3); }
+  .reminder-title { font-size:1.05rem; line-height:1.4; color:var(--text); }
+  .reminder-due { font-size:.68rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-top:.2rem; }
+  .reminder-due.overdue { color:var(--c3); }
+  #reminders-empty { font-size:1rem; font-weight:300; color:var(--muted); font-style:italic; margin-top:.8rem; }
+
+  /* ── VOCAB CARD ── */
+  #flashcard-cell { grid-column:3; grid-row:3/5; background:var(--bg3); padding:1.4rem 1.6rem; overflow:hidden; position:relative; display:flex; flex-direction:column; justify-content:center; }
+  #flashcard-cell::before { background:var(--c2); opacity:.7; }
+
+  .fc-tag { display:inline-block; font-size:.75rem; font-weight:600; letter-spacing:.18em; text-transform:uppercase; padding:.25rem .6rem; border-radius:2px; background:rgba(255,255,255,.08); color:var(--c2); margin-bottom:.9rem; transition:color 1.5s; }
+  .fc-word { font-family:'Playfair Display',serif; font-size:clamp(2.4rem,4vw,4.2rem); font-weight:700; color:var(--text); line-height:1.1; margin-bottom:.3rem; }
+  .fc-gender { font-size:1rem; font-weight:300; color:var(--muted); font-style:italic; margin-bottom:.8rem; }
+  .fc-definition { font-size:1.15rem; font-weight:400; color:var(--text); line-height:1.5; margin-bottom:.9rem; }
+  .fc-example-label { font-size:.68rem; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-bottom:.4rem; }
+  .fc-example { font-family:'Playfair Display',serif; font-size:1.1rem; font-style:italic; color:var(--c2); line-height:1.5; transition:color 1.5s; }
+
+  .fc-timer-bar { position:absolute; bottom:0; left:0; height:3px; background:var(--c2); transition:width linear, background 1.5s; }
+  .fc-status { position:absolute; bottom:.6rem; right:.9rem; font-size:.55rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .fc-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:.5rem; color:var(--muted); font-size:.8rem; letter-spacing:.1em; text-transform:uppercase; text-align:center; }
+  #fc-content { opacity:1; transition:opacity .4s ease; }
+  #fc-content.fade { opacity:0; }
+
+  @keyframes slideIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes flash   { 0%,100%{opacity:1} 50%{opacity:.45} }
+  .flash { animation:flash .5s ease; }
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- CLOCK -->
+  <div class="cell t1" id="clock-cell">
+    <div class="label">Local Time</div>
+    <div id="time">--:--</div>
+    <div id="utc-row"><span class="utc-lbl">UTC</span><span id="utc-time">--:--</span></div>
+    <div id="date-day-row">
+      <span id="date">---</span>
+      <span id="day">---</span>
+    </div>
+    <svg class="deco" id="clock-deco" viewBox="0 0 200 200" fill="none">
+      <path d="M20 180 C20 180 60 20 180 20 C180 20 140 80 100 110 C60 140 20 180 20 180Z" fill="#4a9e5c"/>
+      <path d="M20 180 C60 140 100 110 180 20" stroke="#2d6638" stroke-width="2"/>
+      <path d="M20 180 C50 130 90 100 140 50" stroke="#2d6638" stroke-width="1" opacity=".5"/>
+    </svg>
+  </div>
+
+  <!-- WEATHER CURRENT -->
+  <div class="cell t2" id="weather-cell">
+    <div class="label">Weather</div>
+    <div class="weather-main">
+      <div id="temp">--°</div>
+      <div class="weather-detail">
+        <div id="condition">Loading...</div>
+        <div class="weather-stats">
+          <div><div class="stat-val" id="humidity">--%</div><div class="stat-lbl">Humidity</div></div>
+          <div><div class="stat-val" id="feels">--°</div><div class="stat-lbl">Feels Like</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="weather-extra">
+      <div class="extra-stat"><div class="extra-val" id="wind">-- mph</div><div class="extra-lbl">Wind</div></div>
+      <div class="extra-stat"><div class="extra-val" id="precip-prob">--%</div><div class="extra-lbl">Rain Chance</div></div>
+      <div class="extra-stat"><div class="extra-val" id="uv-index">--</div><div class="extra-lbl">UV Index</div></div>
+      <div class="extra-stat"><div class="extra-val" id="sunrise">--:--</div><div class="extra-lbl">Sunrise</div></div>
+      <div class="extra-stat"><div class="extra-val" id="sunset">--:--</div><div class="extra-lbl">Sunset</div></div>
+    </div>
+  </div>
+
+  <!-- FORECAST: HOURLY + 7-DAY -->
+  <div class="cell t2" id="forecast-cell">
+    <div class="forecast-section-label">12-Hour Outlook</div>
+    <div class="hourly-grid" id="hourly-grid"></div>
+    <div class="forecast-section-label" style="margin-top:.3rem;">7-Day Forecast</div>
+    <div class="forecast-grid" id="forecast-grid"></div>
+  </div>
+
+  <!-- STOCKS -->
+  <div class="cell t4" id="stocks-cell">
+    <div class="label">Markets</div>
+    <div class="ticker-grid" id="ticker-grid"></div>
+  </div>
+
+  <!-- STATUS -->
+  <div id="bottom-cell" class="cell">
+    <div id="status-bar">
+      <em id="theme-badge">🌿 jungle</em>
+      &nbsp;·&nbsp; Updated: <em id="last-update">--:--</em>
+      &nbsp;·&nbsp; Weather: <em id="weather-status">—</em>
+      &nbsp;·&nbsp; Markets: <em id="stocks-status">—</em>
+      &nbsp;·&nbsp; <a href="/admin" style="color:var(--muted);text-decoration:none;font-size:inherit;font-weight:600;letter-spacing:.14em;" target="_blank">⚙ admin</a>
+    </div>
+  </div>
+
+  <!-- PHOTOS -->
+  <div class="cell" id="photo-cell">
+    <div class="photo-frame" id="photo-frame">
+      <div class="photo-empty" id="photo-empty">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span>No photos in ~/Pictures</span>
+      </div>
+      <canvas id="theme-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div class="photo-bar">
+        <span class="photo-name" id="photo-name"></span>
+        <div class="photo-dots" id="photo-dots"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMINDERS -->
+  <div class="cell t3" id="reminders-cell">
+    <div class="label">Reminders</div>
+    <ul id="reminders-list"></ul>
+    <div id="reminders-empty" style="display:none">All clear ✓</div>
+  </div>
+
+  <!-- VOCAB -->
+  <div class="cell t2" id="flashcard-cell">
+    <div id="fc-loading" style="display:none">Loading...</div>
+    <div id="fc-content">
+      <div class="fc-tag" id="fc-tag">noun</div>
+      <div class="fc-word" id="fc-word">---</div>
+      <div class="fc-gender" id="fc-gender"></div>
+      <div class="fc-definition" id="fc-definition">---</div>
+      <div class="fc-example-label">Example</div>
+      <div class="fc-example" id="fc-example">---</div>
+    </div>
+    <div class="fc-timer-bar" id="fc-timer-bar"></div>
+    <div class="fc-status" id="fc-status">next in 30s</div>
+  </div>
+
+</div>
+<script>
+// ── CLOCK ──────────────────────────────────────────────────────────────────
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS_SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function updateClock(){
+  const now=new Date();
+  // Always display Chicago time regardless of Pi's system timezone
+  const chi=new Date(now.toLocaleString('en-US',{timeZone:'America/Chicago'}));
+  const h=String(chi.getHours()).padStart(2,'0'),m=String(chi.getMinutes()).padStart(2,'0');
+  document.getElementById('time').textContent=h+':'+m;
+  document.getElementById('utc-time').textContent=String(now.getUTCHours()).padStart(2,'0')+':'+String(now.getUTCMinutes()).padStart(2,'0');
+  document.getElementById('date').textContent=MONTHS[chi.getMonth()]+' '+chi.getDate()+', '+chi.getFullYear();
+  document.getElementById('day').textContent=DAYS[chi.getDay()];
+  document.getElementById('last-update').textContent=h+':'+m;
+}
+updateClock(); setInterval(updateClock,1000);
+
+// ── WEATHER CODES ──────────────────────────────────────────────────────────
+function weatherDesc(code){
+  const m={0:'Clear Sky',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Foggy',48:'Icy Fog',51:'Light Drizzle',53:'Drizzle',55:'Heavy Drizzle',61:'Light Rain',63:'Rain',65:'Heavy Rain',71:'Light Snow',73:'Snow',75:'Heavy Snow',80:'Showers',81:'Showers',82:'Heavy Showers',95:'Thunderstorm',96:'Thunderstorm',99:'Heavy Storm'};
+  return m[code]||'Unknown';
+}
+function weatherIcon(code){
+  // Returns an inline SVG string — works in all browsers including Surf
+  const s=32; // size
+  const c=(path,stroke,fill)=>`<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">${path}</svg>`;
+  // Sun
+  const sun=`<circle cx="16" cy="16" r="6" fill="#f5c842"/>
+    <line x1="16" y1="2" x2="16" y2="6" stroke="#f5c842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="16" y1="26" x2="16" y2="30" stroke="#f5c842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="2" y1="16" x2="6" y2="16" stroke="#f5c842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="26" y1="16" x2="30" y2="16" stroke="#f5c842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="5.5" y1="5.5" x2="8.4" y2="8.4" stroke="#f5c842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="23.6" y1="23.6" x2="26.5" y2="26.5" stroke="#f5c842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="26.5" y1="5.5" x2="23.6" y2="8.4" stroke="#f5c842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="8.4" y1="23.6" x2="5.5" y2="26.5" stroke="#f5c842" stroke-width="2" stroke-linecap="round"/>`;
+  // Cloud
+  const cloud=`<path d="M8 22C5.2 22 3 19.8 3 17C3 14.5 4.8 12.4 7.2 12.1C7.1 11.7 7 11.4 7 11C7 8.2 9.2 6 12 6C14.1 6 15.9 7.2 16.7 9C17.1 8.8 17.5 8.7 18 8.7C20.2 8.7 22 10.5 22 12.7C22 12.9 22 13.1 21.9 13.3C24.2 13.8 26 15.8 26 18.2C26 20.9 23.8 23 21.1 23H8.9C8.6 23 8.3 22.5 8 22Z" fill="#a0b8c8"/>`;
+  // Sun+Cloud
+  const suncld=`<circle cx="10" cy="10" r="5" fill="#f5c842"/>
+    <line x1="10" y1="1" x2="10" y2="4" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="1" y1="10" x2="4" y2="10" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="3.5" y1="3.5" x2="5.6" y2="5.6" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="16.4" y1="3.5" x2="14.3" y2="5.6" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M10 22C7.8 22 6 20.2 6 18C6 16 7.4 14.3 9.3 14C9.1 13.4 9 12.7 9 12C9 9.2 11.2 7 14 7C16.1 7 17.9 8.2 18.7 10C19.1 9.8 19.5 9.7 20 9.7C22.2 9.7 24 11.5 24 13.7C24 16.2 21.9 18.2 19.4 18.2H10.6C10.4 18.2 10.2 22 10 22Z" fill="#a0b8c8"/>`;
+  // Rain drops
+  const rain=`<path d="M6 18C3.8 18 2 16.2 2 14C2 12 3.4 10.3 5.3 10C5.1 9.4 5 8.7 5 8C5 5.2 7.2 3 10 3C12.1 3 13.9 4.2 14.7 6C15.1 5.8 15.5 5.7 16 5.7C18.2 5.7 20 7.5 20 9.7C20 12.2 17.9 14.2 15.4 14.2H6.6C6.4 14.2 6.2 18 6 18Z" fill="#8090a8"/>
+    <line x1="6" y1="20" x2="4" y2="26" stroke="#60a8d8" stroke-width="2" stroke-linecap="round"/>
+    <line x1="11" y1="20" x2="9" y2="26" stroke="#60a8d8" stroke-width="2" stroke-linecap="round"/>
+    <line x1="16" y1="20" x2="14" y2="26" stroke="#60a8d8" stroke-width="2" stroke-linecap="round"/>`;
+  // Snow
+  const snow=`<path d="M6 16C3.8 16 2 14.2 2 12C2 10 3.4 8.3 5.3 8C5.1 7.4 5 6.7 5 6C5 3.2 7.2 1 10 1C12.1 1 13.9 2.2 14.7 4C15.1 3.8 15.5 3.7 16 3.7C18.2 3.7 20 5.5 20 7.7C20 10.2 17.9 12.2 15.4 12.2H6.6C6.4 12.2 6.2 16 6 16Z" fill="#8090a8"/>
+    <line x1="7" y1="22" x2="7" y2="30" stroke="#a0d8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="3" y1="26" x2="11" y2="26" stroke="#a0d8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="4.2" y1="23.2" x2="9.8" y2="28.8" stroke="#a0d8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="9.8" y1="23.2" x2="4.2" y2="28.8" stroke="#a0d8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="18" y1="20" x2="18" y2="28" stroke="#a0d8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="14" y1="24" x2="22" y2="24" stroke="#a0d8f0" stroke-width="2" stroke-linecap="round"/>`;
+  // Fog
+  const fog=`<line x1="2" y1="10" x2="22" y2="10" stroke="#8090a8" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="4" y1="16" x2="26" y2="16" stroke="#8090a8" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="2" y1="22" x2="20" y2="22" stroke="#8090a8" stroke-width="2.5" stroke-linecap="round"/>`;
+  // Storm / lightning
+  const storm=`<path d="M4 16C1.8 16 0 14.2 0 12C0 10 1.4 8.3 3.3 8C3.1 7.4 3 6.7 3 6C3 3.2 5.2 1 8 1C10.1 1 11.9 2.2 12.7 4C13.1 3.8 13.5 3.7 14 3.7C16.2 3.7 18 5.5 18 7.7C18 10.2 15.9 12.2 13.4 12.2H4.6C4.4 12.2 4.2 16 4 16Z" fill="#607080"/>
+    <polyline points="11,16 7,24 11,24 7,32" stroke="#f5c842" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+
+  if(code===0) return `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none">${sun}</svg>`;
+  if(code<=2)  return `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none">${suncld}</svg>`;
+  if(code===3) return `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none">${cloud}</svg>`;
+  if(code<=48) return `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none">${fog}</svg>`;
+  if(code<=65) return `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none">${rain}</svg>`;
+  if(code<=77) return `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none">${snow}</svg>`;
+  if(code<=82) return `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none">${rain}</svg>`;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none">${storm}</svg>`;
+}
+
+// ── THEME ENGINE ───────────────────────────────────────────────────────────
+let currentTheme='jungle', lastWeatherCode=-1;
+
+function pickTheme(code){
+  const h=new Date().getHours();
+  if(h>=22||h<7) return 'desert';
+  if(code>=0&&code<=2) return 'beach';
+  return 'jungle';
+}
+
+const THEMES={
+  jungle:{
+    body:'', badge:'🌿 jungle',
+    deco:`<path d="M20 180 C20 180 60 20 180 20 C180 20 140 80 100 110 C60 140 20 180 20 180Z" fill="#4a9e5c"/><path d="M20 180 C60 140 100 110 180 20" stroke="#2d6638" stroke-width="2"/><path d="M20 180 C50 130 90 100 140 50" stroke="#2d6638" stroke-width="1" opacity=".5"/>`,
+    scenes:[{label:'jungle_rain.jpg',draw:drawJungleRain},{label:'jungle_mist.jpg',draw:drawJungleMist},{label:'jungle_canopy.jpg',draw:drawJungleCanopy}]
+  },
+  beach:{
+    body:'beach', badge:'🌊 beach',
+    deco:`<circle cx="150" cy="50" r="35" fill="#ffd060" opacity=".9"/><path d="M20 160 Q60 120 100 155 Q140 190 180 150 L180 200 L20 200Z" fill="#c8a050"/><path d="M20 150 Q60 130 100 145 Q140 160 180 140" stroke="#e0b860" stroke-width="2" fill="none"/>`,
+    scenes:[{label:'beach_sunny.jpg',draw:drawBeachSunny},{label:'beach_waves.jpg',draw:drawBeachWaves},{label:'beach_sunset.jpg',draw:drawBeachSunset}]
+  },
+  desert:{
+    body:'desert', badge:'🌙 desert',
+    deco:`<circle cx="150" cy="40" r="22" fill="#ffb830" opacity=".6"/><path d="M10 180 Q30 140 50 160 Q70 180 80 160 Q90 140 110 170 L110 200 L10 200Z" fill="#2a1a08"/>`,
+    scenes:[{label:'desert_stars.jpg',draw:drawDesertStars},{label:'desert_moon.jpg',draw:drawDesertMoon},{label:'desert_dusk.jpg',draw:drawDesertDusk}]
+  }
+};
+
+function applyTheme(name){
+  if(name===currentTheme) return;
+  currentTheme=name;
+  const t=THEMES[name];
+  document.body.className=t.body;
+  document.getElementById('theme-badge').textContent=t.badge;
+  document.getElementById('clock-deco').innerHTML=t.deco;
+  sceneIndex=0; sceneList=t.scenes;
+  resize(); buildDots();
+}
+
+// ── CANVAS ─────────────────────────────────────────────────────────────────
+const cv=document.getElementById('theme-canvas'),ctx=cv.getContext('2d');
+let sceneIndex=0,sceneList=THEMES.jungle.scenes,sceneAnim=false;
+
+function resize(){const el=cv.parentElement;cv.width=el.offsetWidth||200;cv.height=el.offsetHeight||200;drawScene(sceneList[sceneIndex],1);}
+window.addEventListener('resize',resize);
+function drawScene(s,a){ctx.clearRect(0,0,cv.width,cv.height);s.draw(ctx,cv.width,cv.height,a);}
+
+function nextScene(){
+  if(sceneAnim||sceneList.length<2)return;
+  sceneAnim=true;
+  const prev=sceneIndex,nxt=(sceneIndex+1)%sceneList.length;let a=0;
+  function step(){a+=0.03;ctx.clearRect(0,0,cv.width,cv.height);sceneList[prev].draw(ctx,cv.width,cv.height,1-a);sceneList[nxt].draw(ctx,cv.width,cv.height,a);
+    if(a<1)requestAnimationFrame(step);else{sceneIndex=nxt;drawScene(sceneList[sceneIndex],1);buildDots();sceneAnim=false;}}
+  requestAnimationFrame(step);
+}
+setInterval(nextScene,60000);
+
+function buildDots(){
+  const w=document.getElementById('photo-dots');w.innerHTML='';
+  sceneList.forEach((_,i)=>{const d=document.createElement('div');d.className='photo-dot'+(i===sceneIndex?' active':'');w.appendChild(d);});
+  const n=document.getElementById('photo-name');if(n)n.textContent=sceneList[sceneIndex].label;
+}
+
+// ── SCENE DRAW FUNCTIONS ───────────────────────────────────────────────────
+function drawJungleRain(c,W,H,a){c.save();c.globalAlpha=a;c.fillStyle='#0d1a10';c.fillRect(0,0,W,H*.5);c.fillStyle='#1a2e1a';c.beginPath();c.ellipse(W*.3,H*.18,W*.35,H*.14,0,0,Math.PI*2);c.fill();c.beginPath();c.ellipse(W*.7,H*.14,W*.3,H*.12,0,0,Math.PI*2);c.fill();c.fillStyle='#0d2010';c.beginPath();c.moveTo(0,H*.45);c.bezierCurveTo(W*.2,H*.25,W*.5,H*.35,W*.7,H*.28);c.bezierCurveTo(W*.85,H*.22,W,H*.3,W,H*.45);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();c.fillStyle='#142818';c.beginPath();c.moveTo(0,H*.55);c.bezierCurveTo(W*.15,H*.42,W*.4,H*.5,W*.6,H*.44);c.bezierCurveTo(W*.78,H*.38,W,H*.48,W,H*.55);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();c.strokeStyle='rgba(160,220,180,0.1)';c.lineWidth=1;for(let i=0;i<40;i++){const x=(i*67+20)%W,y=(i*43)%(H*.5);c.beginPath();c.moveTo(x,y);c.lineTo(x-3,y+16);c.stroke();}c.restore();}
+function drawJungleMist(c,W,H,a){c.save();c.globalAlpha=a;c.fillStyle='#0e1e12';c.fillRect(0,0,W,H);for(let i=0;i<4;i++){c.fillStyle='rgba(180,220,190,'+(0.04+i*.02)+')';c.beginPath();c.ellipse(W*.5,H*(.3+i*.12),W*.7,H*.06,0,0,Math.PI*2);c.fill();}c.fillStyle='#0a1a0d';for(let i=0;i<5;i++){const x=W*(.1+i*.2),h2=H*(.25+(i%2)*.1);c.fillRect(x-W*.02,h2,W*.04,H-h2);c.beginPath();c.ellipse(x,h2,W*.08,H*.1,0,0,Math.PI*2);c.fill();}c.restore();}
+function drawJungleCanopy(c,W,H,a){c.save();c.globalAlpha=a;c.fillStyle='#111e14';c.fillRect(0,0,W,H);c.fillStyle='#1a3a20';c.beginPath();c.ellipse(W*.5,0,W*.4,H*.3,0,0,Math.PI*2);c.fill();const lc=['#0d2010','#142818','#1a3020'];[[0,H*.1,.6,-.2],[W,H*.05,.5,.3],[W*.5,H*.6,.8,0],[.1*W,H*.7,.55,.1]].forEach(([x,y,sx,ang],i)=>{c.fillStyle=lc[i%3];c.save();c.translate(x,y);c.rotate(ang);c.beginPath();c.moveTo(0,0);c.bezierCurveTo(W*sx*.3,-H*.2,W*sx*.8,H*.1,W*sx,H*.05);c.bezierCurveTo(W*sx*.8,H*.25,W*sx*.3,H*.18,0,0);c.fill();c.restore();});c.restore();}
+function drawBeachSunny(c,W,H,a){c.save();c.globalAlpha=a;c.fillStyle='#1a6aa0';c.fillRect(0,0,W,H*.55);c.fillStyle='#ffd060';c.beginPath();c.arc(W*.75,H*.18,H*.1,0,Math.PI*2);c.fill();c.strokeStyle='rgba(255,208,96,0.18)';c.lineWidth=1;for(let i=0;i<8;i++){const ang=(i/8)*Math.PI*2;c.beginPath();c.moveTo(W*.75+Math.cos(ang)*H*.12,H*.18+Math.sin(ang)*H*.12);c.lineTo(W*.75+Math.cos(ang)*H*.2,H*.18+Math.sin(ang)*H*.2);c.stroke();}c.fillStyle='#1a80c0';c.fillRect(0,H*.48,W,H*.22);c.strokeStyle='rgba(255,255,255,0.09)';c.lineWidth=1;for(let y=H*.5;y<H*.68;y+=7){c.beginPath();c.moveTo(0,y);c.bezierCurveTo(W*.3,y-4,W*.7,y+4,W,y);c.stroke();}c.fillStyle='#c8a050';c.beginPath();c.moveTo(0,H*.68);c.bezierCurveTo(W*.3,H*.64,W*.7,H*.7,W,H*.66);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();c.fillStyle='rgba(0,0,0,0.5)';c.fillRect(W*.12,H*.3,W*.025,H*.4);c.beginPath();c.ellipse(W*.12,H*.31,W*.16,H*.08,-.3,0,Math.PI*2);c.fill();c.beginPath();c.ellipse(W*.12,H*.27,W*.14,H*.07,.3,0,Math.PI*2);c.fill();c.restore();}
+function drawBeachWaves(c,W,H,a){c.save();c.globalAlpha=a;c.fillStyle='#1a5a90';c.fillRect(0,0,W,H*.5);c.fillStyle='#ffc840';c.beginPath();c.arc(W*.8,H*.15,H*.08,0,Math.PI*2);c.fill();['#1060a0','#1878b8','#2090d0','rgba(255,255,255,0.13)'].forEach((col,i)=>{c.fillStyle=col;c.beginPath();c.moveTo(0,H*(.38+i*.06));c.bezierCurveTo(W*.25,H*(.32+i*.06),W*.5,H*(.42+i*.06),W*.75,H*(.36+i*.06));c.bezierCurveTo(W*.88,H*(.32+i*.06),W,H*(.38+i*.06),W,H*(.5+i*.06));c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();});c.fillStyle='#d4aa58';c.beginPath();c.moveTo(0,H*.74);c.bezierCurveTo(W*.3,H*.7,W*.7,H*.76,W,H*.72);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();c.restore();}
+function drawBeachSunset(c,W,H,a){c.save();c.globalAlpha=a;c.fillStyle='#2a1060';c.fillRect(0,0,W,H*.3);c.fillStyle='#c03020';c.fillRect(0,H*.3,W,H*.15);c.fillStyle='#e06820';c.fillRect(0,H*.45,W,H*.1);c.fillStyle='#ffa030';c.beginPath();c.arc(W*.5,H*.5,H*.08,0,Math.PI*2);c.fill();c.fillStyle='#1a2a50';c.fillRect(0,H*.48,W,H*.22);c.fillStyle='rgba(255,140,30,0.22)';c.beginPath();c.moveTo(W*.38,H*.48);c.lineTo(W*.62,H*.48);c.lineTo(W*.72,H*.7);c.lineTo(W*.28,H*.7);c.closePath();c.fill();c.fillStyle='#c8a050';c.beginPath();c.moveTo(0,H*.68);c.bezierCurveTo(W*.3,H*.64,W*.7,H*.7,W,H*.66);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();c.restore();}
+function drawDesertStars(c,W,H,a){c.save();c.globalAlpha=a;c.fillStyle='#080508';c.fillRect(0,0,W,H*.7);[[.1,.05],[.25,.12],[.4,.08],[.55,.15],[.7,.06],[.85,.1],[.15,.22],[.45,.18],[.65,.25],[.8,.2],[.3,.3],[.9,.28],[.05,.32],[.5,.35],[.75,.38]].forEach(([sx,sy])=>{c.fillStyle='rgba(255,255,240,0.7)';c.beginPath();c.arc(sx*W,sy*H,.8+.9*(sx*10%2),0,Math.PI*2);c.fill();});c.fillStyle='rgba(180,160,255,0.04)';c.beginPath();c.moveTo(0,H*.1);c.bezierCurveTo(W*.3,H*.05,W*.6,H*.2,W,H*.08);c.lineTo(W,H*.25);c.bezierCurveTo(W*.6,H*.35,W*.3,H*.22,0,H*.28);c.closePath();c.fill();c.fillStyle='#f0d890';c.beginPath();c.arc(W*.78,H*.12,H*.07,0,Math.PI*2);c.fill();c.fillStyle='#080508';c.beginPath();c.arc(W*.82,H*.1,H*.065,0,Math.PI*2);c.fill();c.fillStyle='#180e06';c.beginPath();c.moveTo(0,H*.68);c.bezierCurveTo(W*.15,H*.56,W*.3,H*.62,W*.45,H*.58);c.bezierCurveTo(W*.6,H*.54,W*.75,H*.64,W,H*.6);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();c.fillStyle='#201208';c.beginPath();c.moveTo(0,H*.78);c.bezierCurveTo(W*.2,H*.68,W*.4,H*.74,W*.6,H*.7);c.bezierCurveTo(W*.8,H*.66,W,H*.72,W,H*.78);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();_camel(c,W*.55,H*.62,W*.18,H*.14);c.restore();}
+function drawDesertMoon(c,W,H,a){c.save();c.globalAlpha=a;c.fillStyle='#0a0608';c.fillRect(0,0,W,H*.65);c.fillStyle='rgba(255,220,120,0.07)';c.beginPath();c.arc(W*.3,H*.2,H*.25,0,Math.PI*2);c.fill();c.fillStyle='#f8e070';c.beginPath();c.arc(W*.3,H*.2,H*.1,0,Math.PI*2);c.fill();c.fillStyle='rgba(200,160,40,0.35)';[[-.04,-.02,.018],[.03,.04,.012],[-.02,.05,.008]].forEach(([dx,dy,r])=>{c.beginPath();c.arc(W*.3+dx*W,H*.2+dy*H,r*W,0,Math.PI*2);c.fill();});for(let i=0;i<28;i++){const sx=(i*137.5)%W,sy=(i*89.3)%(H*.6);c.fillStyle='rgba(255,255,220,'+(0.2+.4*(i%3)*.33)+')';c.beginPath();c.arc(sx,sy,.6+.7*(i%3)*.5,0,Math.PI*2);c.fill();}c.fillStyle='#1a0e06';c.beginPath();c.moveTo(0,H*.62);c.bezierCurveTo(W*.2,H*.52,W*.5,H*.58,W*.7,H*.54);c.bezierCurveTo(W*.85,H*.5,W,H*.56,W,H*.62);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();c.fillStyle='#221408';c.beginPath();c.moveTo(0,H*.76);c.bezierCurveTo(W*.3,H*.7,W*.55,H*.74,W*.8,H*.7);c.bezierCurveTo(W*.9,H*.68,W,H*.72,W,H*.76);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();_camel(c,W*.2,H*.59,W*.15,H*.12);c.restore();}
+function drawDesertDusk(c,W,H,a){c.save();c.globalAlpha=a;c.fillStyle='#180818';c.fillRect(0,0,W,H*.2);c.fillStyle='#400820';c.fillRect(0,H*.2,W,H*.15);c.fillStyle='#802010';c.fillRect(0,H*.35,W,H*.12);c.fillStyle='#c04010';c.fillRect(0,H*.47,W,H*.08);c.fillStyle='#ffb020';c.beginPath();c.arc(W*.5,H*.54,H*.06,Math.PI,Math.PI*2);c.fill();c.fillStyle='rgba(255,176,32,0.13)';c.beginPath();c.arc(W*.5,H*.54,H*.18,0,Math.PI*2);c.fill();[[.1,.08],[.3,.05],[.6,.1],[.8,.07],[.9,.15],[.2,.2],[.7,.18]].forEach(([sx,sy])=>{c.fillStyle='rgba(255,240,200,0.55)';c.beginPath();c.arc(sx*W,sy*H,.7,0,Math.PI*2);c.fill();});c.fillStyle='#160c04';c.beginPath();c.moveTo(0,H*.62);c.bezierCurveTo(W*.2,H*.54,W*.45,H*.6,W*.65,H*.55);c.bezierCurveTo(W*.8,H*.5,W,H*.58,W,H*.62);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();c.fillStyle='#201008';c.beginPath();c.moveTo(0,H*.76);c.bezierCurveTo(W*.25,H*.7,W*.5,H*.74,W*.78,H*.7);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();_camel(c,W*.68,H*.56,W*.16,H*.13);c.restore();}
+function _camel(c,x,y,w,h){c.save();c.fillStyle='rgba(0,0,0,0.75)';c.beginPath();c.ellipse(x,y,w*.45,h*.28,-.05,0,Math.PI*2);c.fill();c.beginPath();c.arc(x-w*.08,y-h*.32,h*.2,Math.PI,Math.PI*2);c.fill();c.beginPath();c.moveTo(x+w*.25,y-h*.08);c.bezierCurveTo(x+w*.32,y-h*.35,x+w*.38,y-h*.45,x+w*.35,y-h*.55);c.bezierCurveTo(x+w*.42,y-h*.55,x+w*.44,y-h*.45,x+w*.38,y-h*.18);c.lineTo(x+w*.3,y-h*.05);c.closePath();c.fill();c.beginPath();c.ellipse(x+w*.36,y-h*.58,h*.1,h*.08,.3,0,Math.PI*2);c.fill();[[.15,0],[.25,0],[-.15,.05],[-.25,.05]].forEach(([dx,t])=>{c.beginPath();c.moveTo(x+dx*w*2,y+h*.2);c.lineTo(x+dx*w*2+t*w,y+h*.55);c.lineWidth=w*.06;c.strokeStyle='rgba(0,0,0,0.75)';c.stroke();});c.restore();}
+
+// ── WEATHER + FORECAST ────────────────────────────────────────────────────
+function uvLabel(uv){
+  if(uv<=2)return uv+' Low';
+  if(uv<=5)return uv+' Mod';
+  if(uv<=7)return uv+' High';
+  if(uv<=10)return uv+' V.High';
+  return uv+' Extreme';
+}
+async function fetchWeather(){
+  try{
+    const d=await(await fetch('/api/weather')).json();
+    if(d.error)throw new Error(d.error);
+    document.getElementById('temp').textContent=d.temp+'°';
+    document.getElementById('condition').textContent=d.condition;
+    document.getElementById('humidity').textContent=d.humidity+'%';
+    document.getElementById('feels').textContent=d.feels+'°';
+    document.getElementById('wind').textContent=d.wind+' mph '+( d.wind_dir||'');
+    document.getElementById('precip-prob').textContent=(d.precip_prob||0)+'%';
+    document.getElementById('uv-index').textContent=uvLabel(Math.round(d.uv_index||0));
+    document.getElementById('sunrise').textContent=d.sunrise||'--:--';
+    document.getElementById('sunset').textContent=d.sunset||'--:--';
+    document.getElementById('weather-status').textContent='OK';
+    if(d.code!==undefined&&d.code!==lastWeatherCode){lastWeatherCode=d.code;applyTheme(pickTheme(d.code));}
+    if(d.forecast) renderForecast(d.forecast);
+    if(d.hourly)   renderHourly(d.hourly);
+  }catch(e){
+    document.getElementById('condition').textContent='Unavailable';
+    document.getElementById('weather-status').textContent='ERR';
+    applyTheme(pickTheme(lastWeatherCode));
+  }
+}
+
+function renderHourly(slots){
+  const grid=document.getElementById('hourly-grid');
+  grid.innerHTML='';
+  slots.forEach(s=>{
+    const div=document.createElement('div');
+    div.className='h-slot'+(s.now?' now':'');
+    const rainHTML=s.precip>0?'<div class="h-rain">'+s.precip+'%</div>':'';
+    div.innerHTML=
+      '<div class="h-time">'+(s.now?'Now':s.time)+'</div>'+
+      '<div class="h-icon">'+weatherIconSm(s.code)+'</div>'+
+      '<div class="h-temp">'+(s.temp!==null?s.temp+'°':'--')+'</div>'+
+      rainHTML;
+    grid.appendChild(div);
+  });
+}
+
+function weatherIconSm(code){
+  // 24px version for hourly strip
+  const s=24;
+  const sun=`<circle cx="12" cy="12" r="4.5" fill="#f5c842"/><line x1="12" y1="1.5" x2="12" y2="4" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="20" x2="12" y2="22.5" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/><line x1="1.5" y1="12" x2="4" y2="12" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/><line x1="20" y1="12" x2="22.5" y2="12" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/><line x1="4" y1="4" x2="6" y2="6" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/><line x1="18" y1="18" x2="20" y2="20" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/><line x1="20" y1="4" x2="18" y2="6" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/><line x1="6" y1="18" x2="4" y2="20" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round"/>`;
+  const cloud=`<path d="M5 16C3.3 16 2 14.7 2 13C2 11.5 3.1 10.2 4.6 10C4.4 9.5 4.3 9 4.3 8.4C4.3 6.2 6.1 4.4 8.3 4.4C9.8 4.4 11.1 5.2 11.8 6.4C12.1 6.3 12.4 6.2 12.8 6.2C14.5 6.2 15.9 7.5 15.9 9.3C15.9 11.2 14.3 12.7 12.4 12.7H5.6L5 16Z" fill="#a0b8c8"/>`;
+  const suncld=`<circle cx="7" cy="7" r="3.5" fill="#f5c842"/><line x1="7" y1="1" x2="7" y2="3" stroke="#f5c842" stroke-width="1.2" stroke-linecap="round"/><line x1="1" y1="7" x2="3" y2="7" stroke="#f5c842" stroke-width="1.2" stroke-linecap="round"/><line x1="2.5" y1="2.5" x2="4" y2="4" stroke="#f5c842" stroke-width="1.2" stroke-linecap="round"/><line x1="11.5" y1="2.5" x2="10" y2="4" stroke="#f5c842" stroke-width="1.2" stroke-linecap="round"/><path d="M7 17C5.3 17 4 15.7 4 14C4 12.5 5 11.3 6.4 11C6.3 10.6 6.2 10.1 6.2 9.6C6.2 7.6 7.8 6 9.8 6C11.2 6 12.4 6.7 13 7.8C13.3 7.7 13.6 7.6 14 7.6C15.6 7.6 17 9 17 10.6C17 12.4 15.5 13.9 13.6 13.9H7.4L7 17Z" fill="#a0b8c8"/>`;
+  const rain=`<path d="M4 13C2.3 13 1 11.7 1 10C1 8.5 2.1 7.2 3.6 7C3.4 6.5 3.3 6 3.3 5.4C3.3 3.2 5.1 1.4 7.3 1.4C8.8 1.4 10.1 2.2 10.8 3.4C11.1 3.3 11.4 3.2 11.8 3.2C13.5 3.2 14.9 4.5 14.9 6.3C14.9 8.2 13.3 9.7 11.4 9.7H4.6L4 13Z" fill="#8090a8"/><line x1="5" y1="15" x2="3.5" y2="20" stroke="#60a8d8" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="15" x2="7.5" y2="20" stroke="#60a8d8" stroke-width="1.5" stroke-linecap="round"/><line x1="13" y1="15" x2="11.5" y2="20" stroke="#60a8d8" stroke-width="1.5" stroke-linecap="round"/>`;
+  const snow=`<path d="M4 12C2.3 12 1 10.7 1 9C1 7.5 2.1 6.2 3.6 6C3.4 5.5 3.3 5 3.3 4.4C3.3 2.2 5.1 0.4 7.3 0.4C8.8 0.4 10.1 1.2 10.8 2.4C11.1 2.3 11.4 2.2 11.8 2.2C13.5 2.2 14.9 3.5 14.9 5.3C14.9 7.2 13.3 8.7 11.4 8.7H4.6L4 12Z" fill="#8090a8"/><line x1="6" y1="16" x2="6" y2="23" stroke="#a0d8f0" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="19.5" x2="9" y2="19.5" stroke="#a0d8f0" stroke-width="1.5" stroke-linecap="round"/>`;
+  const fog=`<line x1="1" y1="7" x2="17" y2="7" stroke="#8090a8" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="21" y2="12" stroke="#8090a8" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="17" x2="16" y2="17" stroke="#8090a8" stroke-width="2" stroke-linecap="round"/>`;
+  const storm=`<path d="M3 12C1.4 12 0 10.7 0 9C0 7.5 1.1 6.2 2.5 6C2.3 5.5 2.2 5 2.2 4.4C2.2 2.2 4 0.4 6.2 0.4C7.7 0.4 9 1.2 9.7 2.4C10 2.3 10.4 2.2 10.7 2.2C12.4 2.2 13.8 3.5 13.8 5.3C13.8 7.2 12.3 8.7 10.3 8.7H3.7L3 12Z" fill="#607080"/><polyline points="9,13 6,19 9,19 6,24" stroke="#f5c842" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+  if(code===0) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none">${sun}</svg>`;
+  if(code<=2)  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none">${suncld}</svg>`;
+  if(code===3) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none">${cloud}</svg>`;
+  if(code<=48) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none">${fog}</svg>`;
+  if(code<=65) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none">${rain}</svg>`;
+  if(code<=77) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none">${snow}</svg>`;
+  if(code<=82) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none">${rain}</svg>`;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none">${storm}</svg>`;
+}
+
+function renderForecast(days){
+  const g=document.getElementById('forecast-grid');g.innerHTML='';
+  const today=new Date();
+  days.forEach((d,i)=>{
+    const dt=new Date(today);dt.setDate(today.getDate()+i);
+    const div=document.createElement('div');div.className='fc-day';
+    div.innerHTML=
+      '<div class="fc-name">'+(i===0?'Today':DAYS_SHORT[dt.getDay()])+'</div>'+
+      '<div class="fc-icon">'+weatherIcon(d.code)+'</div>'+
+      '<div class="fc-cond">'+weatherDesc(d.code)+'</div>'+
+      '<div class="fc-temps"><span class="fc-hi">'+Math.round(d.hi)+'°</span><span class="fc-lo">'+Math.round(d.lo)+'°</span></div>';
+    g.appendChild(div);
+  });
+}
+
+// re-check theme on the hour boundary
+setInterval(()=>{const t=pickTheme(lastWeatherCode);if(t!==currentTheme)applyTheme(t);},60000);
+
+// ── STOCKS ─────────────────────────────────────────────────────────────────
+async function fetchStocks(){
+  try{
+    const d=await(await fetch('/api/stocks')).json();
+    if(d.error)throw new Error(d.error);
+    renderStocks(d.stocks);
+    document.getElementById('stocks-status').textContent='OK';
+  }catch(e){document.getElementById('stocks-status').textContent='ERR';}
+}
+function renderStocks(stocks){
+  const g=document.getElementById('ticker-grid');g.innerHTML='';
+  stocks.forEach(s=>{
+    const dir=s.chg>0?'up':s.chg<0?'down':'flat',sign=s.chg>0?'+':'';
+    const price=s.price===null?'—':s.price>=1000?s.price.toLocaleString('en-US',{maximumFractionDigits:0}):s.price.toFixed(2);
+    const div=document.createElement('div');div.className='ticker '+dir;
+    div.innerHTML='<div class="t-sym">'+s.sym+'</div><div class="t-price">'+price+'</div><div class="t-chg '+dir+'">'+sign+s.chg.toFixed(2)+'%</div>';
+    g.appendChild(div);
+  });
+}
+
+// ── REMINDERS ──────────────────────────────────────────────────────────────
+async function fetchReminders(){
+  const list=document.getElementById('reminders-list'),empty=document.getElementById('reminders-empty');
+  try{
+    const d=await(await fetch('/api/reminders')).json();
+    list.innerHTML='';
+    if(!d.items||d.items.length===0){empty.style.display='block';return;}
+    empty.style.display='none';
+    const today=new Date();today.setHours(0,0,0,0);
+    d.items.forEach((item,i)=>{
+      const li=document.createElement('li');
+      li.className='reminder-item'+(item.overdue?' overdue':'');
+      li.style.animationDelay=(i*50)+'ms';
+      let dueHTML='';
+      if(item.due){
+        const diff=Math.round((new Date(item.due+'T00:00:00')-today)/86400000);
+        const label=diff<0?'Overdue by '+Math.abs(diff)+'d':diff===0?'Due today':diff===1?'Due tomorrow':'Due in '+diff+'d';
+        dueHTML='<div class="reminder-due'+(item.overdue?' overdue':'')+'">'+label+'</div>';
+      }
+      li.innerHTML='<div class="reminder-title">'+item.title.replace(/</g,'&lt;')+'</div>'+dueHTML;
+      list.appendChild(li);
+    });
+  }catch(e){console.error(e);}
+}
+
+// ── REAL PHOTOS ────────────────────────────────────────────────────────────
+let realPhotos=[],realIdx=0,realImgs=[];
+async function initPhotos(){
+  try{
+    const d=await(await fetch('/api/photos')).json();
+    realPhotos=d.photos||[];
+    if(realPhotos.length===0)return;
+    cv.style.display='none';
+    document.getElementById('photo-empty').style.display='none';
+    const frame=document.getElementById('photo-frame');
+    realImgs=realPhotos.map((src,i)=>{
+      const img=document.createElement('img');img.src=src;img.alt='';
+      if(i===0)img.classList.add('active');
+      frame.insertBefore(img,document.querySelector('.photo-bar'));return img;
+    });
+    const wrap=document.getElementById('photo-dots');wrap.innerHTML='';
+    realPhotos.forEach((_,i)=>{const dot=document.createElement('div');dot.className='photo-dot'+(i===0?' active':'');wrap.appendChild(dot);});
+    document.getElementById('photo-name').textContent=decodeURIComponent(realPhotos[0].split('/').pop());
+    setInterval(()=>{
+      realImgs[realIdx].classList.remove('active');
+      realIdx=(realIdx+1)%realPhotos.length;
+      realImgs[realIdx].classList.add('active');
+      document.querySelectorAll('.photo-dot').forEach((d,i)=>d.classList.toggle('active',i===realIdx));
+      document.getElementById('photo-name').textContent=decodeURIComponent(realPhotos[realIdx].split('/').pop());
+    },60000);
+  }catch(e){console.error('Photos:',e);}
+}
+
+// ── VOCAB ROTATION ─────────────────────────────────────────────────────────
+let fcTimer=null, fcCountdown=null, fcSecondsLeft=30;
+
+async function fetchVocab(){
+  try{
+    const card=await(await fetch('/api/flashcard')).json();
+    if(card.error) throw new Error(card.error);
+    showCard(card);
+  }catch(e){
+    console.error('Vocab error:',e);
+    document.getElementById('fc-word').textContent='Error';
+    document.getElementById('fc-definition').textContent='Could not load word.';
+    document.getElementById('fc-example').textContent='';
+    scheduleNext();
+  }
+}
+
+function showCard(card){
+  const content=document.getElementById('fc-content');
+  content.classList.add('fade');
+  setTimeout(()=>{
+    document.getElementById('fc-tag').textContent=card.type;
+    document.getElementById('fc-word').textContent=card.word;
+    document.getElementById('fc-gender').textContent=card.gender||'';
+    document.getElementById('fc-definition').textContent=card.definition;
+    document.getElementById('fc-example').textContent=card.example;
+    content.classList.remove('fade');
+    scheduleNext();
+  },400);
+}
+
+function scheduleNext(){
+  if(fcTimer) clearTimeout(fcTimer);
+  if(fcCountdown) clearInterval(fcCountdown);
+  fcSecondsLeft=30;
+  const bar=document.getElementById('fc-timer-bar');
+  const status=document.getElementById('fc-status');
+  bar.style.transition='none'; bar.style.width='100%';
+  bar.offsetWidth;
+  bar.style.transition='width 30s linear'; bar.style.width='0%';
+  fcCountdown=setInterval(()=>{
+    fcSecondsLeft--;
+    status.textContent='next in '+fcSecondsLeft+'s';
+    if(fcSecondsLeft<=0) clearInterval(fcCountdown);
+  },1000);
+  fcTimer=setTimeout(fetchVocab, 30000);
+}
+
+// ── BOOT ───────────────────────────────────────────────────────────────────
+resize(); buildDots();
+applyTheme(pickTheme(0));
+initPhotos();
+fetchVocab();
+function updateAll(){fetchWeather();fetchStocks();fetchReminders();}
+updateAll();
+setInterval(updateAll,5*60*1000);
+</script>
+</body>
+</html>

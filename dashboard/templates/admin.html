@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Reminders — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0d1a0f;
+    --bg2:      #111e13;
+    --bg3:      #162019;
+    --border:   #1e3022;
+    --amber:    #e8a020;
+    --amber2:   #f5c842;
+    --teal:     #3dd6a8;
+    --leaf:     #4a9e5c;
+    --leafdark: #2d6638;
+    --sand:     #c8b06a;
+    --text:     #d4e8d0;
+    --muted:    #4a6e50;
+    --warn:     #e87040;
+    --danger:   #c04030;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Josefin Sans', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 4rem;
+  }
+
+  /* top wave header */
+  .header {
+    background: var(--bg3);
+    padding: 2rem 1.5rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+      repeating-linear-gradient(
+        118deg,
+        transparent 0px, transparent 60px,
+        rgba(74,158,92,0.04) 60px, rgba(74,158,92,0.04) 61px
+      );
+    pointer-events: none;
+  }
+
+  /* ambient glow top-right */
+  .header::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(232,160,32,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header-inner {
+    position: relative;
+    z-index: 1;
+  }
+
+  .header-eyebrow {
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+  }
+
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--amber2);
+    text-shadow: 0 0 30px rgba(245,200,66,0.25);
+  }
+
+  .header-sub {
+    font-size: 0.75rem;
+    font-weight: 300;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── ADD FORM ── */
+  .add-section {
+    padding: 1.4rem 1.2rem;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.9rem;
+  }
+
+  input[type="text"],
+  input[type="date"] {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 300;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    margin-bottom: 0.7rem;
+  }
+
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  input[type="text"]:focus,
+  input[type="date"]:focus {
+    border-color: var(--leaf);
+  }
+
+  input[type="date"] {
+    color-scheme: dark;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 0.85rem;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn:active { transform: scale(0.98); opacity: 0.85; }
+
+  .btn-primary {
+    background: var(--leaf);
+    color: var(--bg);
+  }
+
+  .btn-done {
+    background: transparent;
+    border: 1px solid var(--leafdark);
+    color: var(--leaf);
+    font-size: 0.7rem;
+    padding: 0.5rem 0.9rem;
+    width: auto;
+    display: inline-block;
+  }
+
+  .btn-delete {
+    background: transparent;
+    border: 1px solid #3a1a14;
+    color: var(--warn);
+    font-size: 0.7rem;
+    padding: 0.5rem 0.9rem;
+    width: auto;
+    display: inline-block;
+  }
+
+  .btn-save {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--sand);
+    font-size: 0.7rem;
+    padding: 0.5rem 0.9rem;
+    width: auto;
+    display: inline-block;
+  }
+
+  /* ── REMINDER CARDS ── */
+  .reminders-section { padding: 1.2rem; }
+
+  .count-badge {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.9rem;
+  }
+
+  .count-badge span { color: var(--leaf); }
+
+  .reminder-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--leaf);
+    border-radius: 0 8px 8px 0;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.7rem;
+    transition: border-color 0.2s;
+  }
+
+  .reminder-card.overdue {
+    border-left-color: var(--warn);
+    background: rgba(232,112,64,0.05);
+  }
+
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--text);
+    margin-bottom: 0.35rem;
+  }
+
+  .card-due {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.7rem;
+  }
+
+  .card-due.overdue-text { color: var(--warn); }
+
+  .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* inline edit */
+  .edit-form {
+    display: none;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .edit-form.open { display: block; }
+
+  .edit-form input {
+    margin-bottom: 0.5rem;
+  }
+
+  .btn-edit {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+  }
+
+  .empty-state .icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.8rem;
+    opacity: 0.5;
+  }
+
+  .empty-state p {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1rem;
+  }
+
+  /* back link */
+  .back-link {
+    display: block;
+    text-align: center;
+    margin: 2rem auto 0;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-eyebrow">Dashboard Admin</div>
+    <h1>Reminders</h1>
+    <div class="header-sub">Add, edit or clear items from the board</div>
+  </div>
+</div>
+
+<!-- ADD FORM -->
+<div class="add-section">
+  <div class="section-label">New Reminder</div>
+  <form method="POST" action="/admin/add">
+    <input type="text" name="title" placeholder="What needs doing..." required autocomplete="off" autocorrect="on">
+    <div style="position:relative;">
+      <input type="date" name="due" style="padding-right:5rem;">
+      <span style="position:absolute;right:.8rem;top:50%;transform:translateY(-50%);font-size:.55rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#4a6e50;pointer-events:none;">optional</span>
+    </div>
+    <button type="submit" class="btn btn-primary">Add to Board</button>
+  </form>
+</div>
+
+<!-- REMINDERS LIST -->
+<div class="reminders-section">
+
+  {% if reminders %}
+    {% set active = reminders | selectattr('done', 'equalto', False) | list %}
+    {% set done   = reminders | selectattr('done', 'equalto', True)  | list %}
+
+    <div class="count-badge"><span>{{ active | length }}</span> active &nbsp;·&nbsp; {{ done | length }} completed</div>
+
+    {% for r in active | sort(attribute='due') %}
+      {% set today_str = now %}
+      {% set is_overdue = r.due and r.due < today_str %}
+      <div class="reminder-card {% if is_overdue %}overdue{% endif %}">
+        <div class="card-title">{{ r.title }}</div>
+
+        {% if r.due %}
+          <div class="card-due {% if is_overdue %}overdue-text{% endif %}">
+            {{ r.due }}{% if is_overdue %} — overdue{% endif %}
+          </div>
+        {% endif %}
+
+        <div class="card-actions">
+          <form method="POST" action="/admin/done/{{ r.id }}" style="display:inline">
+            <button type="submit" class="btn btn-done">✓ Done</button>
+          </form>
+          <form method="POST" action="/admin/delete/{{ r.id }}" style="display:inline">
+            <button type="submit" class="btn btn-delete">Delete</button>
+          </form>
+          <button class="btn-edit" onclick="toggleEdit('{{ r.id }}')">Edit ▾</button>
+        </div>
+
+        <div class="edit-form" id="edit-{{ r.id }}">
+          <form method="POST" action="/admin/edit/{{ r.id }}">
+            <input type="text" name="title" value="{{ r.title }}" required>
+            <input type="date" name="due" value="{{ r.due or '' }}">
+            <button type="submit" class="btn btn-save">Save Changes</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+
+    {% if done %}
+      <div class="count-badge" style="margin-top:1.4rem">Completed</div>
+      {% for r in done %}
+        <div class="reminder-card" style="opacity:0.45; border-left-color: var(--muted);">
+          <div class="card-title" style="text-decoration:line-through; color:var(--muted);">{{ r.title }}</div>
+          <div class="card-actions">
+            <form method="POST" action="/admin/delete/{{ r.id }}" style="display:inline">
+              <button type="submit" class="btn btn-delete">Remove</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state">
+      <div class="icon">🌿</div>
+      <p>Nothing here yet — add your first reminder above.</p>
+    </div>
+  {% endif %}
+
+  <a href="/" class="back-link">← Back to Dashboard</a>
+</div>
+
+<!-- STOCKS SECTION -->
+<div class="reminders-section" style="margin-top:0; border-top:1px solid var(--border); padding-top:1.4rem;">
+  <div class="count-badge" style="margin-bottom:.9rem;">Stocks &amp; Indices</div>
+
+  <!-- Add stock form -->
+  <div class="add-section" style="margin-bottom:1.2rem;">
+    <div class="section-label">Add Ticker</div>
+    <form method="POST" action="/admin/stocks/add">
+      <input type="text" name="symbol" placeholder="Yahoo symbol (e.g. AAPL, ^DJI, BTC-USD)" required autocomplete="off" autocorrect="off" autocapitalize="characters">
+      <input type="text" name="label" placeholder="Display label (e.g. AAPL, DOW, BTC)" required autocomplete="off" autocorrect="off" autocapitalize="characters">
+      <button type="submit" class="btn btn-primary">Add to Dashboard</button>
+    </form>
+    <div style="font-size:.58rem;color:var(--muted);margin-top:.5rem;letter-spacing:.05em;">
+      Common symbols: stocks use their ticker (TSLA, AMZN), indices use ^ prefix (^DJI, ^GSPC, ^IXIC), crypto uses -USD suffix (BTC-USD, ETH-USD)
+    </div>
+  </div>
+
+  <!-- Current stocks list -->
+  {% if stocks %}
+    {% for s in stocks %}
+    <div class="reminder-card" style="display:flex;align-items:center;gap:.7rem;padding:.7rem 1rem;margin-bottom:.5rem;">
+      <div style="flex:1;">
+        <div class="card-title">{{ s.label }}</div>
+        <div style="font-family:monospace;font-size:.65rem;color:var(--muted);margin-top:.15rem;">{{ s.symbol }}</div>
+      </div>
+      <div style="display:flex;gap:.4rem;align-items:center;">
+        <form method="POST" action="/admin/stocks/move/{{ s.symbol|replace('^','__hat__')|replace('-','__dash__') }}/up" style="display:inline">
+          <button type="submit" class="btn btn-save" style="padding:.35rem .6rem;font-size:.7rem;">▲</button>
+        </form>
+        <form method="POST" action="/admin/stocks/move/{{ s.symbol|replace('^','__hat__')|replace('-','__dash__') }}/down" style="display:inline">
+          <button type="submit" class="btn btn-save" style="padding:.35rem .6rem;font-size:.7rem;">▼</button>
+        </form>
+        <form method="POST" action="/admin/stocks/remove/{{ s.symbol|replace('^','__hat__')|replace('-','__dash__') }}" style="display:inline">
+          <button type="submit" class="btn btn-delete">Remove</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="color:var(--muted);font-size:.8rem;font-style:italic;">No stocks configured.</div>
+  {% endif %}
+
+  <a href="/" class="back-link" style="margin-top:1.5rem;">← Back to Dashboard</a>
+</div>
+
+<script>
+  function toggleEdit(id) {
+    const el = document.getElementById('edit-' + id);
+    el.classList.toggle('open');
+  }
+</script>
+</body>
+</html>

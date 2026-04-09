@@ -1,0 +1,50 @@
+[
+  {
+    "symbol": "^DJI",
+    "label": "DOW"
+  },
+  {
+    "symbol": "^GSPC",
+    "label": "S&P"
+  },
+  {
+    "symbol": "^IXIC",
+    "label": "NSDQ"
+  },
+  {
+    "symbol": "CAT",
+    "label": "CAT"
+  },
+  {
+    "symbol": "BTC-USD",
+    "label": "BTC"
+  },
+  {
+    "symbol": "AAPL",
+    "label": "AAPL"
+  },
+  {
+    "symbol": "GOOGL",
+    "label": "GOOG"
+  },
+  {
+    "symbol": "META",
+    "label": "META"
+  },
+  {
+    "symbol": "MSFT",
+    "label": "MSFT"
+  },
+  {
+    "symbol": "NVDA",
+    "label": "NVDA"
+  },
+  {
+    "symbol": "AMD",
+    "label": "AMD"
+  },
+  {
+    "symbol": "TSLA",
+    "label": "TSLA"
+  }
+]
