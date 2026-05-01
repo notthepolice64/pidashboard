@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Reminders — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0d1a0f;
+    --bg2:      #111e13;
+    --bg3:      #162019;
+    --border:   #1e3022;
+    --amber:    #e8a020;
+    --amber2:   #f5c842;
+    --teal:     #3dd6a8;
+    --leaf:     #4a9e5c;
+    --leafdark: #2d6638;
+    --sand:     #c8b06a;
+    --text:     #d4e8d0;
+    --muted:    #4a6e50;
+    --warn:     #e87040;
+    --danger:   #c04030;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Josefin Sans', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 4rem;
+  }
+
+  /* top wave header */
+  .header {
+    background: var(--bg3);
+    padding: 2rem 1.5rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+      repeating-linear-gradient(
+        118deg,
+        transparent 0px, transparent 60px,
+        rgba(74,158,92,0.04) 60px, rgba(74,158,92,0.04) 61px
+      );
+    pointer-events: none;
+  }
+
+  /* ambient glow top-right */
+  .header::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(232,160,32,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header-inner {
+    position: relative;
+    z-index: 1;
+  }
+
+  .header-eyebrow {
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+  }
+
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--amber2);
+    text-shadow: 0 0 30px rgba(245,200,66,0.25);
+  }
+
+  .header-sub {
+    font-size: 0.75rem;
+    font-weight: 300;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Section wrapper so each block has consistent padding & border ── */
+  .section {
+    padding: 1.4rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section + .section { margin-top: 0; }
+
+  .section-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--amber2);
+    margin-bottom: 0.2rem;
+  }
+  .section-blurb {
+    font-size: 0.62rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── ADD FORM (inner sub-card) ── */
+  .add-card {
+    background: var(--bg2);
+    padding: 1rem 1rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+
+  .section-label {
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.7rem;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 300;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    margin-bottom: 0.7rem;
+  }
+
+  input::placeholder { color: var(--muted); }
+
+  input:focus, select:focus { border-color: var(--leaf); }
+
+  input[type="date"] { color-scheme: dark; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 0.85rem;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn:active { transform: scale(0.98); opacity: 0.85; }
+
+  .btn-primary { background: var(--leaf); color: var(--bg); }
+
+  .btn-done {
+    background: transparent;
+    border: 1px solid var(--leafdark);
+    color: var(--leaf);
+    font-size: 0.7rem;
+    padding: 0.5rem 0.9rem;
+    width: auto;
+    display: inline-block;
+  }
+
+  .btn-delete {
+    background: transparent;
+    border: 1px solid #3a1a14;
+    color: var(--warn);
+    font-size: 0.7rem;
+    padding: 0.5rem 0.9rem;
+    width: auto;
+    display: inline-block;
+  }
+
+  .btn-save {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--sand);
+    font-size: 0.7rem;
+    padding: 0.5rem 0.9rem;
+    width: auto;
+    display: inline-block;
+  }
+
+  .btn-warn {
+    background: transparent;
+    border: 1px solid var(--warn);
+    color: var(--warn);
+    font-size: 0.7rem;
+    padding: 0.6rem 0.9rem;
+    width: auto;
+    display: inline-block;
+  }
+
+  .count-badge {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.9rem;
+  }
+
+  .count-badge span { color: var(--leaf); }
+
+  /* ── REMINDER CARDS ── */
+  .reminder-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--leaf);
+    border-radius: 0 8px 8px 0;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.7rem;
+    transition: border-color 0.2s;
+  }
+
+  .reminder-card.past {
+    border-left-color: var(--warn);
+    background: rgba(232,112,64,0.05);
+  }
+
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--text);
+    margin-bottom: 0.35rem;
+  }
+
+  .card-due {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.7rem;
+  }
+
+  .card-due.past-text { color: var(--warn); }
+
+  .hidden-pill {
+    display: inline-block;
+    font-size: 0.55rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--warn);
+    border: 1px solid var(--warn);
+    border-radius: 3px;
+    padding: 0.15rem 0.4rem;
+    margin-left: 0.5rem;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* inline edit */
+  .edit-form {
+    display: none;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+  }
+  .edit-form.open { display: block; }
+  .edit-form input { margin-bottom: 0.5rem; }
+
+  .btn-edit {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--muted);
+  }
+  .empty-state .icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.8rem;
+    opacity: 0.5;
+  }
+  .empty-state p {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1rem;
+  }
+
+  /* event rows / stock rows (compact) */
+  .row-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  /* back link */
+  .back-link {
+    display: block;
+    text-align: center;
+    margin: 2rem auto 0;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .past-banner {
+    background: rgba(232,112,64,0.08);
+    border: 1px solid rgba(232,112,64,0.3);
+    border-radius: 6px;
+    padding: 0.7rem 0.9rem;
+    margin: 0.4rem 0 1rem;
+    font-size: 0.7rem;
+    color: var(--warn);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-eyebrow">Dashboard Admin</div>
+    <h1>Manage Your Board</h1>
+    <div class="header-sub">Reminders &amp; events sit at the top — past-dated items hide from the dashboard automatically</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     1.  REMINDERS  (top of the page)
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-heading">Reminders</div>
+  <div class="section-blurb">Items past their due date stay here for cleanup but are hidden from the main dashboard.</div>
+
+  <!-- Add reminder -->
+  <div class="add-card">
+    <div class="section-label">New Reminder</div>
+    <form method="POST" action="/admin/add">
+      <input type="text" name="title" placeholder="What needs doing..." required autocomplete="off" autocorrect="on">
+      <div style="position:relative;">
+        <input type="date" name="due" style="padding-right:5rem;">
+        <span style="position:absolute;right:.8rem;top:50%;transform:translateY(-50%);font-size:.55rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#4a6e50;pointer-events:none;">optional</span>
+      </div>
+      <button type="submit" class="btn btn-primary">Add to Board</button>
+    </form>
+  </div>
+
+  {% if reminders %}
+    <div class="count-badge">
+      <span>{{ active | length }}</span> active &nbsp;·&nbsp;
+      {{ past_due | length }} past-due &nbsp;·&nbsp;
+      {{ done_reminders | length }} completed
+    </div>
+
+    {% if active %}
+      {% for r in active %}
+        <div class="reminder-card">
+          <div class="card-title">{{ r.title }}</div>
+          {% if r.due %}
+            <div class="card-due">{{ r.due }}</div>
+          {% endif %}
+          <div class="card-actions">
+            <form method="POST" action="/admin/done/{{ r.id }}" style="display:inline">
+              <button type="submit" class="btn btn-done">✓ Done</button>
+            </form>
+            <form method="POST" action="/admin/delete/{{ r.id }}" style="display:inline">
+              <button type="submit" class="btn btn-delete">Delete</button>
+            </form>
+            <button class="btn-edit" onclick="toggleEdit('{{ r.id }}')">Edit ▾</button>
+          </div>
+          <div class="edit-form" id="edit-{{ r.id }}">
+            <form method="POST" action="/admin/edit/{{ r.id }}">
+              <input type="text" name="title" value="{{ r.title }}" required>
+              <input type="date" name="due" value="{{ r.due or '' }}">
+              <button type="submit" class="btn btn-save">Save Changes</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:1.4rem 1rem;">
+        <p>No active reminders — add one above.</p>
+      </div>
+    {% endif %}
+
+    {% if past_due %}
+      <div class="count-badge" style="margin-top:1.4rem">Past Due (hidden from dashboard)</div>
+      <div class="past-banner">
+        <span>{{ past_due | length }} reminder{{ 's' if past_due|length != 1 else '' }} past due — already hidden from the main display.</span>
+        <form method="POST" action="/admin/clear_past" style="display:inline" onsubmit="return confirm('Delete all past-due reminders?');">
+          <button type="submit" class="btn btn-warn">Clear All Past Due</button>
+        </form>
+      </div>
+      {% for r in past_due %}
+        <div class="reminder-card past">
+          <div class="card-title">
+            {{ r.title }}<span class="hidden-pill">Hidden</span>
+          </div>
+          <div class="card-due past-text">{{ r.due }} — past due</div>
+          <div class="card-actions">
+            <form method="POST" action="/admin/done/{{ r.id }}" style="display:inline">
+              <button type="submit" class="btn btn-done">✓ Done</button>
+            </form>
+            <form method="POST" action="/admin/delete/{{ r.id }}" style="display:inline">
+              <button type="submit" class="btn btn-delete">Delete</button>
+            </form>
+            <button class="btn-edit" onclick="toggleEdit('{{ r.id }}')">Edit ▾</button>
+          </div>
+          <div class="edit-form" id="edit-{{ r.id }}">
+            <form method="POST" action="/admin/edit/{{ r.id }}">
+              <input type="text" name="title" value="{{ r.title }}" required>
+              <input type="date" name="due" value="{{ r.due or '' }}">
+              <button type="submit" class="btn btn-save">Save Changes</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if done_reminders %}
+      <div class="count-badge" style="margin-top:1.4rem">Completed</div>
+      {% for r in done_reminders %}
+        <div class="reminder-card" style="opacity:0.45; border-left-color: var(--muted);">
+          <div class="card-title" style="text-decoration:line-through; color:var(--muted);">{{ r.title }}</div>
+          <div class="card-actions">
+            <form method="POST" action="/admin/delete/{{ r.id }}" style="display:inline">
+              <button type="submit" class="btn btn-delete">Remove</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state">
+      <div class="icon">🌿</div>
+      <p>Nothing here yet — add your first reminder above.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     2.  EVENTS & BIRTHDAYS
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-heading">Events &amp; Birthdays</div>
+  <div class="section-blurb">
+    Events appear on the dashboard within 14 days of the date and disappear once the day passes (recurring events roll forward to next year automatically). Holidays are built in.
+  </div>
+
+  <!-- Add custom event -->
+  <div class="add-card">
+    <div class="section-label">Add Event or Birthday</div>
+    <form method="POST" action="/admin/events/add">
+      <input type="text" name="name" placeholder="Name (e.g. Mom's Birthday, Anniversary)" required autocomplete="off" autocorrect="on">
+      <div style="display:flex;gap:.6rem;">
+        <select name="month" required style="flex:1;">
+          <option value="">Month</option>
+          <option value="1">January</option><option value="2">February</option>
+          <option value="3">March</option><option value="4">April</option>
+          <option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option>
+          <option value="9">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select>
+        <input type="number" name="day" placeholder="Day" min="1" max="31" required style="width:90px;text-align:center;">
+      </div>
+      <button type="submit" class="btn btn-primary">Add Event</button>
+    </form>
+  </div>
+
+  {% if events %}
+    <div class="section-label" style="margin-bottom:.6rem;">Your Events</div>
+    {% for e in events %}
+    <div class="row-card">
+      <div style="flex:1;">
+        <div class="card-title">{{ e.name }}</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:.15rem;">
+          {{ ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][e.month] }} {{ e.day }}
+        </div>
+      </div>
+      <form method="POST" action="/admin/events/remove/{{ e.id }}">
+        <button type="submit" class="btn btn-delete">Remove</button>
+      </form>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="color:var(--muted);font-size:.8rem;font-style:italic;margin-bottom:1rem;">No custom events yet.</div>
+  {% endif %}
+
+  <!-- Built-in holidays reference -->
+  <div class="section-label" style="margin-top:1.2rem;margin-bottom:.6rem;">Built-in US Holidays</div>
+  <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+    {% for h in holidays %}
+    <div style="font-size:.6rem;padding:.2rem .55rem;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:3px;color:var(--muted);">
+      {{ h.name }}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     3.  STOCKS & INDICES
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-heading">Stocks &amp; Indices</div>
+  <div class="section-blurb">Tickers shown on the dashboard's stock strip.</div>
+
+  <!-- Add stock form -->
+  <div class="add-card">
+    <div class="section-label">Add Ticker</div>
+    <form method="POST" action="/admin/stocks/add">
+      <input type="text" name="symbol" placeholder="Yahoo symbol (e.g. AAPL, ^DJI, BTC-USD)" required autocomplete="off" autocorrect="off" autocapitalize="characters">
+      <input type="text" name="label" placeholder="Display label (e.g. AAPL, DOW, BTC)" required autocomplete="off" autocorrect="off" autocapitalize="characters">
+      <button type="submit" class="btn btn-primary">Add to Dashboard</button>
+    </form>
+    <div style="font-size:.58rem;color:var(--muted);margin-top:.5rem;letter-spacing:.05em;">
+      Common symbols: stocks use their ticker (TSLA, AMZN), indices use ^ prefix (^DJI, ^GSPC, ^IXIC), crypto uses -USD suffix (BTC-USD, ETH-USD)
+    </div>
+  </div>
+
+  {% if stocks %}
+    {% for s in stocks %}
+    <div class="row-card">
+      <div style="flex:1;">
+        <div class="card-title">{{ s.label }}</div>
+        <div style="font-family:monospace;font-size:.65rem;color:var(--muted);margin-top:.15rem;">{{ s.symbol }}</div>
+      </div>
+      <div style="display:flex;gap:.4rem;align-items:center;">
+        <form method="POST" action="/admin/stocks/move/{{ s.symbol|replace('^','__hat__')|replace('-','__dash__') }}/up" style="display:inline">
+          <button type="submit" class="btn btn-save" style="padding:.35rem .6rem;font-size:.7rem;">▲</button>
+        </form>
+        <form method="POST" action="/admin/stocks/move/{{ s.symbol|replace('^','__hat__')|replace('-','__dash__') }}/down" style="display:inline">
+          <button type="submit" class="btn btn-save" style="padding:.35rem .6rem;font-size:.7rem;">▼</button>
+        </form>
+        <form method="POST" action="/admin/stocks/remove/{{ s.symbol|replace('^','__hat__')|replace('-','__dash__') }}" style="display:inline">
+          <button type="submit" class="btn btn-delete">Remove</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="color:var(--muted);font-size:.8rem;font-style:italic;">No stocks configured.</div>
+  {% endif %}
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     4.  LOCATION & TIME ZONE
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-heading">Location &amp; Time Zone</div>
+  <div class="section-blurb">
+    Drives the weather forecast, sunrise/sunset, and the dashboard clock's time zone.
+  </div>
+
+  <div class="add-card">
+    {% set has_location = location.lat is not none and location.lon is not none %}
+
+    <div class="section-label">Current</div>
+    <div style="margin-bottom:1rem;font-size:.9rem;line-height:1.5;">
+      {% if has_location %}
+        <strong style="color:var(--text);">{{ location.city or 'Unnamed location' }}</strong><br>
+        <span style="color:var(--muted);font-size:.7rem;letter-spacing:.05em;">
+          {{ '%.4f'|format(location.lat) }}, {{ '%.4f'|format(location.lon) }} &nbsp;·&nbsp; {{ location.timezone }}
+        </span>
+      {% else %}
+        <span style="color:var(--warn);font-style:italic;">Not configured — weather and clock timezone will not work until set.</span>
+      {% endif %}
+    </div>
+
+    {% if location_error %}
+      <div class="past-banner" style="margin:.4rem 0 1rem;">
+        {% if location_error == 'invalid' %}
+          Latitude or longitude was not a valid number. Use decimals like <code>41.6411</code> and <code>-89.4681</code>.
+        {% else %}
+          Please enter a latitude and longitude.
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <div class="section-label">{{ 'Edit Location' if has_location else 'Set Location' }}</div>
+    <form method="POST" action="/admin/location">
+      <input type="text" name="label"
+             placeholder="Display label (e.g. Home, My Cabin)"
+             value="{{ location.city or '' }}"
+             autocomplete="off">
+      <div style="display:flex;gap:.6rem;">
+        <input type="text" name="lat" placeholder="Latitude"
+               value="{% if location.lat is not none %}{{ location.lat }}{% endif %}"
+               required style="flex:1;">
+        <input type="text" name="lon" placeholder="Longitude"
+               value="{% if location.lon is not none %}{{ location.lon }}{% endif %}"
+               required style="flex:1;">
+      </div>
+      <input type="text" name="timezone"
+             placeholder="Timezone (e.g. America/Chicago, Europe/London, UTC)"
+             value="{{ location.timezone or '' }}"
+             autocomplete="off">
+      <button type="submit" class="btn btn-primary">{{ 'Update Location' if has_location else 'Save Location' }}</button>
+    </form>
+
+    <div style="font-size:.62rem;color:var(--muted);margin-top:.9rem;letter-spacing:.04em;line-height:1.6;">
+      Find coordinates: right-click any spot in Google Maps and click the lat/lon to copy.<br>
+      Common timezones:
+      <code style="color:var(--sand);">America/Chicago</code>,
+      <code style="color:var(--sand);">America/New_York</code>,
+      <code style="color:var(--sand);">America/Los_Angeles</code>,
+      <code style="color:var(--sand);">America/Denver</code>,
+      <code style="color:var(--sand);">Europe/London</code>,
+      <code style="color:var(--sand);">UTC</code>.
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     5.  SLEEP SCHEDULE
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-heading">Sleep Schedule</div>
+  <div class="section-blurb">Dashboard switches to sleep mode at the set time and returns automatically at wake time.</div>
+
+  <div class="add-card">
+    <form method="POST" action="/admin/sleep">
+      <div style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;gap:.4rem;">
+          <label style="font-size:.6rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);">Sleep Time</label>
+          <div style="display:flex;gap:.4rem;align-items:center;">
+            <select name="sleep_hour" style="width:80px;margin-bottom:0;">
+              {% for h in range(24) %}
+              <option value="{{ h }}" {% if sleep.sleep_hour == h %}selected{% endif %}>{{ '%02d'|format(h) }}</option>
+              {% endfor %}
+            </select>
+            <span style="color:var(--muted);font-size:1.2rem;font-weight:300;">:</span>
+            <select name="sleep_minute" style="width:80px;margin-bottom:0;">
+              {% for m in [0, 15, 30, 45] %}
+              <option value="{{ m }}" {% if sleep.sleep_minute == m %}selected{% endif %}>{{ '%02d'|format(m) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.4rem;">
+          <label style="font-size:.6rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);">Wake Time</label>
+          <div style="display:flex;gap:.4rem;align-items:center;">
+            <select name="wake_hour" style="width:80px;margin-bottom:0;">
+              {% for h in range(24) %}
+              <option value="{{ h }}" {% if sleep.wake_hour == h %}selected{% endif %}>{{ '%02d'|format(h) }}</option>
+              {% endfor %}
+            </select>
+            <span style="color:var(--muted);font-size:1.2rem;font-weight:300;">:</span>
+            <select name="wake_minute" style="width:80px;margin-bottom:0;">
+              {% for m in [0, 15, 30, 45] %}
+              <option value="{{ m }}" {% if sleep.wake_minute == m %}selected{% endif %}>{{ '%02d'|format(m) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="align-self:flex-end;width:auto;padding:.85rem 1.4rem;">Save Schedule</button>
+      </div>
+      <div style="margin-top:.8rem;font-size:.65rem;color:var(--muted);letter-spacing:.05em;">
+        Current: sleep at {{ '%02d'|format(sleep.sleep_hour) }}:{{ '%02d'|format(sleep.sleep_minute) }} — wake at {{ '%02d'|format(sleep.wake_hour) }}:{{ '%02d'|format(sleep.wake_minute) }}
+      </div>
+    </form>
+  </div>
+</div>
+
+<a href="/" class="back-link">← Back to Dashboard</a>
+
+<script>
+  function toggleEdit(id) {
+    const el = document.getElementById('edit-' + id);
+    el.classList.toggle('open');
+  }
+</script>
+</body>
+</html>

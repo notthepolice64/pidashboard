@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sleep</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    overflow: hidden;
+    user-select: none;
+  }
+  #clock {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: clamp(5rem, 14vw, 13rem);
+    font-weight: 200;
+    letter-spacing: .08em;
+    color: #2a2a2a;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  #message {
+    margin-top: 1.8rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: clamp(1rem, 2.2vw, 2rem);
+    font-weight: 200;
+    letter-spacing: .35em;
+    text-transform: uppercase;
+    color: #1a1a1a;
+  }
+</style>
+</head>
+<body>
+  <div id="clock">--:--</div>
+  <div id="message">time for bed</div>
+<script>
+  let wakeHour = 6, wakeMinute = 30;
+  let LOCAL_TZ = 'UTC';
+
+  fetch('/api/sleep_schedule').then(r=>r.json()).then(s=>{
+    wakeHour = s.wake_hour;
+    wakeMinute = s.wake_minute;
+  }).catch(()=>{});
+
+  fetch('/api/location').then(r=>r.json()).then(loc=>{
+    if(loc && loc.timezone) LOCAL_TZ = loc.timezone;
+  }).catch(()=>{});
+
+  function tick() {
+    const now = new Date();
+    let chi;
+    try {
+      chi = new Date(now.toLocaleString('en-US', { timeZone: LOCAL_TZ }));
+    } catch(e) {
+      chi = now;
+    }
+    const h = String(chi.getHours()).padStart(2, '0');
+    const m = String(chi.getMinutes()).padStart(2, '0');
+    document.getElementById('clock').textContent = h + ':' + m;
+    if (chi.getHours() === wakeHour && chi.getMinutes() >= wakeMinute) {
+      window.location.href = '/';
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  dashboard:
+    build: .
+    container_name: dashboard
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PICTURES_DIR=/app/photos
+      - DATA_DIR=/app/data
+      # Location can be set in the /admin web UI on first run.
+      # To pin it via env vars instead, uncomment and set:
+      # - LATITUDE=51.5074
+      # - LONGITUDE=-0.1278
+      # - CITY=London, UK
+      # - TIMEZONE=Europe/London
+      # - ANTHROPIC_API_KEY=your-key-here
+    volumes:
+      - dashboard-data:/app/data
+      - /home/ubuntu/Desktop/dashphotos:/app/photos:ro
+
+# ── Notes ──────────────────────────────────────────────────────────────
+# • `restart: unless-stopped` brings the container back automatically after
+#   a crash or after the host reboots — that's all you need for "always on".
+# • To start in the background:        docker compose up -d --build
+# • To check it's running:             docker compose ps
+# • To view logs:                      docker compose logs -f
+# • To update after editing code:      docker compose up -d --build
+# • To stop:                           docker compose down
+# ───────────────────────────────────────────────────────────────────────
+
+volumes:
+  dashboard-data:
